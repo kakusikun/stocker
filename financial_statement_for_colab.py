@@ -164,7 +164,7 @@ class FS():
                 return False
         return True
 
-    def save(self, dst):
+    def save(self):
         self.df.to_pickle(self.fname)
 
     def get_index(self):

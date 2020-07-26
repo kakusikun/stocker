@@ -115,28 +115,31 @@ class FS():
     def clean(self):
         self.get()
         if self.fs_type != 'profit':
-            if len(self.df) >= 11:
-                df = pd.DataFrame(columns=[self.fs_type, 'amount'])
+            df = pd.DataFrame(columns=[self.fs_type, 'amount'])
+            try:
+                df[self.fs_type] = self.df[(f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')]
+            except KeyError:
                 try:
-                    df[self.fs_type] = self.df[(f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')]
-                except KeyError:
                     self.get(step=2)
                     df[self.fs_type] = self.df[(f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')]
-
+                except KeyError:
+                    return False
+            try:
+                df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
+            except KeyError:
                 try:
-                    df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
+                    df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.from_month[0]:02}月01日至{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
                 except KeyError:
                     try:
-                        df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.from_month[0]:02}月01日至{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
-                    except KeyError:
                         df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年第{self.season}季', '金額')]
-                
+                    except KeyError:
+                        return False
+            
 
-                self.df = df
-                self.df.amount.fillna(0.0, inplace=True)
-                return True
-            else:
-                return False
+            self.df = df
+            self.df.amount.fillna(0.0, inplace=True)
+            return True
+           
         else:
             df = pd.DataFrame(columns=['index','name', '毛利率','營業利益率','稅前純益率','稅後純益率'])
             df['index'] = self.df[0][1:]

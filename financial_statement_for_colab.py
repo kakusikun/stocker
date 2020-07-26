@@ -154,7 +154,10 @@ class FS():
 
     
     def save(self, dst):
-        self.df.to_pickle(dst)
+        if self.fs_type != 'profit':
+            self.df.to_pickle(os.path.join(dst, str(self.year), str(self.season), self.fs_type, f'{self.fs_type}_{self.year}_{self.season}_{self.co_id}.pkl'))
+        else:
+            self.df.to_pickle(os.path.join(dst, str(self.year), str(self.season), self.fs_type, f'{self.fs_type}_{self.year}_{self.season}.pkl'))
 
     def get_index(self):
         self.clean()

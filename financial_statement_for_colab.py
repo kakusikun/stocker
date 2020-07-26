@@ -38,7 +38,7 @@ def setup_logger(save_dir, log_name="log"):
 
 
 class FS():
-    def __init__(self, fs_type, co_id=1101, latest=True, year=109, season=1, market='sii'):
+    def __init__(self, fs_type, co_id=1101, latest=True, year=109, season=1, market='sii', logger=None):
         if fs_type == 'asset':
             url = 'https://mops.twse.com.tw/mops/web/t164sb03'
         elif fs_type == 'income':
@@ -60,6 +60,7 @@ class FS():
         self.month = [3,6,9,12]
         self.day = [31,30,30,31]
         self.from_month = [1,4,7,10]
+        self.logger = logger
 
     def get(self, step=1):
         if self.fs_type in ['asset', 'income', 'cashflow']:
@@ -95,7 +96,8 @@ class FS():
                 r = requests.post(self.url, form, headers=headers)
                 break
             except:
-                logger.info('sleep')
+                if self.logger is not None:
+                    self.logger.info('sleep')
                 time.sleep(5*60)
                 continue
 

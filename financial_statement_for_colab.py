@@ -152,20 +152,20 @@ class FS():
             self.df = df
             return True
 
-    
-    def save(self, dst):
+    def check_exist(self, dst):
         dst = os.path.join(dst, str(self.year), str(self.season), self.fs_type)
         if self.fs_type != 'profit':
-            fname = os.path.join(dst, f'{self.fs_type}_{self.year}_{self.season}_{self.co_id}.pkl')
-            if not os.path.exists(fname):
-                self.df.to_pickle(fname)
-                return True
+            self.fname = os.path.join(dst, f'{self.fs_type}_{self.year}_{self.season}_{self.co_id}.pkl')
+            if not os.path.exists(self.fname):
+                return False
         else:
-            fname = os.path.join(dst, f'{self.fs_type}_{self.year}_{self.season}.pkl')
-            if not os.path.exists(fname):
-                self.df.to_pickle(fname)
-                return True
-        return False
+            self.fname = os.path.join(dst, f'{self.fs_type}_{self.year}_{self.season}.pkl')
+            if not os.path.exists(self.fname):
+                return False
+        return True
+
+    def save(self, dst):
+        self.df.to_pickle(fname)
 
     def get_index(self):
         self.clean()

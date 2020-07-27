@@ -116,24 +116,34 @@ class FS():
         self.get()
         if self.fs_type != 'profit':
             df = pd.DataFrame(columns=[self.fs_type, 'amount'])
-            try:
-                df[self.fs_type] = self.df[(f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')]
-            except KeyError:
-                try:
-                    self.get(step=2)
-                    df[self.fs_type] = self.df[(f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')]
-                except KeyError:
+
+            fs_type1 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', '會計項目', 'Unnamed: 0_level_3')
+            if fs_type1 in self.df:
+                df[self.fs_type] = self.df[fs_type1]
+            else:
+                self.get(step=2)
+                if fs_type1 in self.df: 
+                    df[self.fs_type] = self.df[fs_type1]
+                else:
                     return False
-            try:
-                df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
-            except KeyError:
-                try:
-                    df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.from_month[0]:02}月01日至{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')]
-                except KeyError:
-                    try:
-                        df['amount'] = self.df[ (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年第{self.season}季', '金額')]
-                    except KeyError:
-                        return False
+
+            amount1 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')
+            amount2 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年{self.from_month[0]:02}月01日至{self.year}年{self.month[self.season-1]:02}月{self.day[self.season-1]}日', '金額')
+            amount3 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年第{self.season}季', '金額')
+            amount4 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年上半年度', '金額')
+            amount5 = (f'民國{self.year}年第{self.season}季', '單位：新台幣仟元', f'{self.year}年度', '金額')
+            if amount1 in self.df:
+                df['amount'] = self.df[amount1]
+            elif amount2 in self.df:
+                df['amount'] = self.df[amount2]
+            elif amount3 in self.df:
+                df['amount'] = self.df[amount3]
+            elif amount4 in self.df:
+                df['amount'] = self.df[amount4]
+            elif amount5 in self.df:
+                df['amount'] = self.df[amount5]
+            else:
+                return False
             
 
             self.df = df

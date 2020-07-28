@@ -39,15 +39,13 @@ def setup_logger(save_dir, log_name="log"):
 
 class Price():
     def __init__(self, year, month, day):
-        url = f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={year}{month:02}{day:02}&type=ALL'
-
         self.year = year
         self.month = month
         self.day = day
-        self.url = url
+        self.url = f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={year}{month:02}{day:02}&type=ALL'
         
     def get(self):
-        r = requests.get(url)
+        r = requests.get(self.url)
         if r.text=='':
             return False    
 
@@ -56,7 +54,7 @@ class Price():
         df.drop(['Unnamed: 16','最後揭示買價', '最後揭示買量', '最後揭示賣價', '最後揭示賣量','漲跌(+/-)'], axis=1, inplace=True)
         for i in ['成交股數', '成交筆數', '成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌價差', '本益比']:
             df[i] = df[i].apply(lambda x: pd.to_numeric(x.replace(",", ""), errors='coerce') if type(x)!=float else x)
-        df['股價日期'] = datetime(int(year),int(month),int(day),0,0,0)
+        df['股價日期'] = datetime(int(self.year),int(self.month),int(self.day),0,0,0)
         self.df = df
         return True
     

@@ -60,7 +60,7 @@ class Price():
     
     def check_exist(self, dst):
         dst = os.path.join(dst, str(self.year))
-        self.fname = os.path.join(dst, str(self.year), f'{self.year}_{self.month}_{self.day}.pkl')
+        self.fname = os.path.join(dst, f'{self.year}_{self.month}_{self.day}.pkl')
         if not os.path.exists(self.fname):
             return False
         return True

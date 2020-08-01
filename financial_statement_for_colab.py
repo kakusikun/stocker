@@ -238,20 +238,20 @@ class MergeRawFS():
 class AggregateFS():
     def __init__(self, co_id):
         self.co_id = co_id
-        self.unit_cols = ddf.columns.difference(['year', 'season', '資產總計', '歸屬於母公司業主之權益', '權益總計'])
         self.df = None
 
     def aggregate(self):
         fs_dfs = {} 
         for fs_type in ['asset', 'income', 'cashflow']:
-            mfs = MergeRawFS(co_id=co_id, fs_type=fs_type)
+            mfs = MergeRawFS(co_id=self.co_id, fs_type=fs_type)
             mfs.get()
             mfs.merge()
             fs_dfs[fs_type] = mfs.df
         ddf = pd.concat(fs_dfs.values(), axis=1)
+        unit_cols = ddf.columns.difference(['year', 'season', '資產總計', '歸屬於母公司業主之權益', '權益總計'])
         ddf = ddf.loc[:, ~ddf.columns.duplicated()]
-        diff_ddf = ddf[self.unit_cols].diff()
-        diff_ddf[ddf['season']==1] = ddf[ddf['season']==1][self.unit_cols]
+        diff_ddf = ddf[unit_cols].diff()
+        diff_ddf[ddf['season']==1] = ddf[ddf['season']==1][unit_cols]
         self.df = pd.concat([fs_dfs['asset'], diff_ddf], axis=1)
 
     def check_exist(self, dst, read=False):

@@ -180,3 +180,92 @@ class FS():
     def get_index(self):
         self.clean()
         return self.df['index'].to_numpy().tolist()
+
+class MergeRawFS():
+    def __init__(self, co_id, fs_type):
+        self.logger = setup_logger("/content/drive/My Drive/financial_statements", log_name='merge_raw_fs')
+        self.co_id = co_id
+        self.fs_type = fs_type
+        self.month = [3,6,9,12]
+        self.dfs = {}
+        self.src = "/content/drive/My Drive/financial_statements/raw"
+        self.dst = "/content/drive/My Drive/financial_statements/merge"
+        if not os.path.exists(self.dst):
+            os.mkdir(self.dst)
+
+        self.target_item = {
+            'asset': ['資產總計', '資產總額', '歸屬於母公司業主之權益', '權益總額', '權益總計'],
+            'income': ['營業收入合計', '營業毛利（毛損）淨額', 
+                       '營業費用合計', '營業利益（損失）', '所得稅費用（利益）合計', '繼續營業單位本期淨利（淨損）',
+                       '稅前淨利（淨損', '本期淨利（淨損', 
+                       '母公司業主（淨利∕損）', '母公司業主（淨利／損）', '基本每股盈餘'],
+            'cashflow': ['折舊費用', '攤銷費用', '利息費用',
+                        '營業活動之淨現金流入（流出）', '投資活動之淨現金流入（流出）', '籌資活動之淨現金流入（流出）',
+                        '取得不動產、廠房及設備',
+                        '本期現金及約當現金增加（減少）數','匯率變動對現金及約當現金之影響',]
+        }
+        self.unified_target_item = {
+            'asset': {'資產總額':'資產總計','權益總額':'權益總計'},
+            'income': {'母公司業主（淨利／損）': '母公司業主（淨利∕損）'},
+            'cashflow': {}
+        }
+    def get(self):
+        for year in range(102,datetime.now().year-1911+1):
+            for season in range(1,5):
+                fname = os.path.join(self.src, str(year), str(season), self.fs_type, f'{self.fs_type}_{year}_{season}_{self.co_id}.pkl')
+                if not os.path.exists(fname):
+                    self.logger.info(f"{fname} does not exist")
+                else:
+                    self.logger.info(f"{fname}")
+                    self.dfs[f'{year}_{season}'] = pd.read_pickle(fname)
+
+    def merge(self):
+        dfs = []
+        for key in self.dfs:
+            df = self.dfs[key]
+            year, season = key.split("_")
+            _df = df[df[self.fs_type].isin(self.target_item[self.fs_type])]
+            _df = _df.transpose()
+            _df.columns = _df.loc[[self.fs_type]].iloc[0]
+            _df.drop(self.fs_type, inplace=True)
+            _df.insert(0,'season', int(season))
+            _df.insert(0,'year', int(year))
+            _df.rename(columns=self.unified_target_item[self.fs_type], index={'amount': f'{int(year)+1911}{self.month[int(season)-1]:02}'}, inplace=True)
+            _df = _df.loc[:,~_df.columns.duplicated(keep='last')]
+            dfs.append(_df)
+        self.df = pd.concat(dfs)
+
+class AggregateFS():
+    def __init__(self, co_id):
+        self.co_id = co_id
+        self.unit_cols = ddf.columns.difference(['year', 'season', '資產總計', '歸屬於母公司業主之權益', '權益總計'])
+        self.df = None
+
+    def aggregate(self):
+        fs_dfs = {} 
+        for fs_type in ['asset', 'income', 'cashflow']:
+            mfs = MergeRawFS(co_id=co_id, fs_type=fs_type)
+            mfs.get()
+            mfs.merge()
+            fs_dfs[fs_type] = mfs.df
+        ddf = pd.concat(fs_dfs.values(), axis=1)
+        ddf = ddf.loc[:, ~ddf.columns.duplicated()]
+        diff_ddf = ddf[self.unit_cols].diff()
+        diff_ddf[ddf['season']==1] = ddf[ddf['season']==1][self.unit_cols]
+        self.df = pd.concat([fs_dfs['asset'], diff_ddf], axis=1)
+
+    def check_exist(self, dst, read=False):
+        self.fname = os.path.join(dst, f"merge_fs_{self.co_id}.csv")
+        if os.path.exists(self.fname):
+            if read:
+                self.df = pd.read_csv(self.fname)
+            return True
+        return False
+
+    def save(self):
+        self.df.to_csv(self.fname)
+
+def get_index(dst, year, season):
+    fname = os.path.join(dst, "raw", str(year), str(season), "profit", f"profit_{year}_{season}.pkl")
+    df = pd.read_pickle(fname)
+    return df['index'].to_numpy().tolist()

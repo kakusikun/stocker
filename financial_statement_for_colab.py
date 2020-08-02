@@ -302,11 +302,16 @@ class CoDividend():
         self.df = df
     
     def clean(self):
-        df = pd.DataFrame()
-        df['year'] = self.df['股利所屬年(季)度'].apply(lambda x: int(x.split('年年度')[0])+1)
-        df['現金股利'] = self.df[['盈餘分配之現金股利(元/股)', '法定盈餘公積、資本公積發放之現金(元/股)']].apply(lambda x: float(x[0]) + float(x[1]), axis=1)
-        df['股票股利'] = self.df[['盈餘轉增資配股(元/股)', '法定盈餘公積、資本公積轉增資配股(元/股)']].apply(lambda x: (float(x[0]) + float(x[1]))*100, axis=1)
-        self.df = df
+        try:
+            df = pd.DataFrame()
+            df['year'] = self.df['股利所屬年(季)度'].apply(lambda x: int(x.split('年')[0])+1)
+            df['現金股利'] = self.df[['盈餘分配之現金股利(元/股)', '法定盈餘公積、資本公積發放之現金(元/股)']].apply(lambda x: float(x[0]) + float(x[1]), axis=1)
+            df['股票股利'] = self.df[['盈餘轉增資配股(元/股)', '法定盈餘公積、資本公積轉增資配股(元/股)']].apply(lambda x: (float(x[0]) + float(x[1]))*100, axis=1)
+            self.df = df
+            return True
+        except Exception as e:
+            print(e)
+            return False
     
     def check_exist(self, dst):
         self.fname = os.path.join(dst, f"dividend_{self.co_id}.csv")

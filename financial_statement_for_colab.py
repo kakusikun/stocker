@@ -269,3 +269,48 @@ def get_index(dst, year, season):
     fname = os.path.join(dst, "raw", str(year), str(season), "profit", f"profit_{year}_{season}.pkl")
     df = pd.read_pickle(fname)
     return df['index'].to_numpy().tolist()
+
+
+class CoDividend():
+    def __init__(self, co_id):
+        self.co_id = co_id
+        self.url = 'https://mops.twse.com.tw/mops/web/ajax_t05st09_2'
+
+    def get(self):
+        form = {
+            'encodeURIComponent': 1,
+            'step': 1,
+            'firstin': 1,
+            'off': 1,
+            'queryName': 'co_id',
+            'inpuType': 'co_id',
+            'TYPEK': 'all',
+            'isnew': 'false',
+            'co_id': str(self.co_id),
+            'date1': '102',
+            'date2': datetime.now().year-1911,
+            'qryType': '1',
+        }
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) \
+                    AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+        r = requests.post(self.url, data=form, headers=headers)
+        raw_df = pd.read_html(StringIO(r.text))[2]
+    
+        df = pd.DataFrame()
+        for multi_col in raw_df.columns:
+            df[multi_col[-1]] = raw_df[multi_col]
+        self.df = df
+    
+    def clean(self):
+        df = pd.DataFrame()
+        df['year'] = self.df['股利所屬年(季)度'].apply(lambda x: int(x.split('年年度')[0])+1)
+        df['現金股利'] = self.df[['盈餘分配之現金股利(元/股)', '法定盈餘公積、資本公積發放之現金(元/股)']].apply(lambda x: float(x[0]) + float(x[1]), axis=1)
+        df['股票股利'] = self.df[['盈餘轉增資配股(元/股)', '法定盈餘公積、資本公積轉增資配股(元/股)']].apply(lambda x: (float(x[0]) + float(x[1]))*100, axis=1)
+        self.df = df
+    
+    def check_exist(self, dst):
+        self.fname = os.path.join(dst, f"dividend_{self.co_id}.csv")
+        return os.path.exists(self.fname)
+
+    def save(self):
+        self.df.to_csv(self.fname)
